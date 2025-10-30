@@ -1,0 +1,18 @@
+# Node
+node_modules/
+*.log
+.npm/
+
+# TypeScript
+dist/
+build/
+.tsbuildinfo
+
+# Env
+.env
+backend/.env
+
+# OS/Editor
+.DS_Store
+.vscode/
+.idea/
