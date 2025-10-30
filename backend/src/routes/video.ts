@@ -1,13 +1,14 @@
 import { Router, Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { getTopTikTokVideos } from '../scrapers/tiktok';
+import { getTopTikTokMp4s } from '../scrapers/tiktok';
 import { getBreakingNews } from '../scrapers/news';
 import {
   mergeTikTokVideos,
   VideoInput,
   NewsOverlay,
 } from '../videoProcessing/mergeVideos';
+import { downloadToFile } from '../utils/download';
 
 const router = Router();
 
@@ -18,21 +19,29 @@ router.get('/:date', (req: Request, res: Response) => {
 router.post('/:date/generate', async (req: Request, res: Response) => {
   const date = req.params.date;
   try {
-    // 1. Get TikTok videos (stubbed)
-    const tiktoks = await getTopTikTokVideos(date);
+    // 1. Resolve top TikViewer MP4s (must be at least 3 distinct)
+    const resolved = await getTopTikTokMp4s(date);
+    if (resolved.length < 3) {
+      return res.status(502).json({
+        success: false,
+        error: 'Need 3 distinct MP4 URLs but fewer were resolved',
+      });
+    }
 
-    // 2. Download or simulate download (use sample local paths for stub)
-    // For now just map their video URLs to local sample files
-    const downloaded: VideoInput[] = [
-      { path: path.resolve(__dirname, '../../public/sample1.mp4'), speed: 2 },
-      {
-        path: path.resolve(__dirname, '../../public/sample2.mp4'),
-        speed: 1.25,
-      },
-      { path: path.resolve(__dirname, '../../public/sample3.mp4'), speed: 1.5 },
-    ];
+    // 2. Download exactly 3 distinct videos
+    const baseDir = path.resolve(__dirname, '../../public/tmp', date);
+    const speeds = [2, 1.5, 1.25];
+    const downloaded: VideoInput[] = [];
+    for (let i = 0; i < 3; i++) {
+      const item = resolved[i];
+      const outPath = path.join(baseDir, `video${i + 1}.mp4`);
+      await downloadToFile(item.mp4Url, outPath);
+      downloaded.push({ path: outPath, speed: speeds[i] });
+    }
+
     // 3. Get news overlay (stub)
     const news = await getBreakingNews();
+
     // 4. Build overlays (every 5s starting from 3s)
     const newsOverlays: NewsOverlay[] = [
       { image: news.image, headline: news.headline, time: 3 },
@@ -42,12 +51,15 @@ router.post('/:date/generate', async (req: Request, res: Response) => {
       { image: news.image, headline: news.headline, time: 23 },
       { image: news.image, headline: news.headline, time: 28 },
     ];
+
     // 5. Output path
     const outName = `blend_${date}.mp4`;
     const outPath = path.resolve(__dirname, '../../public', outName);
-    // 6. Merge videos (stub)
+
+    // 6. Merge videos (still stub)
     await mergeTikTokVideos(downloaded, newsOverlays, outPath);
-    // 7. Return result (serve file path)
+
+    // 7. Return result
     res.json({ success: true, url: `/public/${outName}` });
   } catch (err) {
     res.status(500).json({
