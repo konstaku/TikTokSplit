@@ -1,0 +1,9 @@
+{
+  "watch": ["backend/**/*.ts"],
+  "ignore": [
+    "backend/public/**",
+    "**/*.map",
+    "node_modules/**"
+  ],
+  "delay": "200ms"
+}
