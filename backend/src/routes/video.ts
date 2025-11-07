@@ -39,8 +39,8 @@ router.post('/:date/generate', async (req: Request, res: Response) => {
       downloaded.push({ path: outPath, speed: speeds[i] });
     }
 
-    // 3. Get news overlay (stub)
-    const news = await getBreakingNews();
+    // 3. Get news overlay
+    const news = await getBreakingNews(date);
 
     // 4. Build overlays (every 5s starting from 3s)
     const newsOverlays: NewsOverlay[] = [

@@ -19,4 +19,3 @@ backend/.env
 
 # Scrape/temp outputs
 backend/public/tmp/
-backend/public/
